@@ -118,3 +118,7 @@ cargo build --release
 
 Releases for Linux and Windows are built by the `Release` workflow when a
 version tag (`v0.1.0`) is pushed.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE).

@@ -1,0 +1,21 @@
+[package]
+name = "matchmaker"
+description = "Game codes and a relay for peer-to-peer games, in one program"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+matchmaker-protocol = { path = "../protocol" }
+anyhow = "1.0.104"
+iroh = "1.4.1"
+iroh-relay = { version = "1.4.1", features = ["server"] }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "time", "sync", "net", "io-util", "signal"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+toml = "1.1.8"
+getrandom = "0.3"
+
+[target.'cfg(windows)'.build-dependencies]
+# The Windows program carries its version: Husky reads it from there.
+winresource = "0.1"

@@ -1,0 +1,1 @@
+{ "mcpServers": { "firepit": { "type": "stdio", "command": "firepit-mcp" } } }

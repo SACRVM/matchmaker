@@ -1,0 +1,17 @@
+{
+  "name": "matchmaker",
+  "executable": "app/matchmaker.exe",
+
+  "source": {
+    "type": "github",
+    "repo": "SACRVM/matchmaker",
+    "asset": "matchmaker-{version}-windows-x86_64.zip",
+    "allowPreRelease": false
+  },
+
+  "checkMinutes": 30,
+  "shutdownTimeoutSec": 30,
+  "killAfterSec": 10,
+  "restartAttempts": 3,
+  "restartPauseSec": 30
+}

@@ -65,6 +65,9 @@ rooms.
 
 1. **Codes and relay** (built): a host's ticket under a code while it is
    connected; the iroh door; Husky; releases for Linux and Windows.
+   Tried under Husky 0.5.1 (Linux, a local manifest): installed, its
+   config made on the first start, an update cut over in a moment with
+   the key kept, and a game's room opened again with a new code.
 2. **Apps and rooms** over iroh (built, 0.2): app and version, seats,
    attributes, the list, quick join, refusals as words. The rooms live
    apart from the door (`server/src/book.rs`), so the next door shares

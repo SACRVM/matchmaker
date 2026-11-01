@@ -105,7 +105,12 @@ nssm start Husky-Matchmaker
 
 Husky lays each release's zip over its folder, so the zips hold the
 program in `app/`. The config then lives in `app\data\`, which Husky
-never touches. When
+never touches.
+
+Husky tells a release is newer by the version in the program's file
+resources, which the Windows build carries. A Linux program has none, so
+Husky on Linux installs the release anew at every check: there, run the
+matchmaker under systemd instead. When
 Husky asks the matchmaker to stop for an update, it stops at once; open
 games lose their codes, and guests already in play on.
 

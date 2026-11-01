@@ -55,7 +55,7 @@ pub async fn attach() -> Result<Option<oneshot::Receiver<String>>> {
                     let id = message["id"].clone();
                     match message["type"].as_str() {
                         Some("ping") => {
-                            let _ = send(&mut write, &json!({ "id": guid(), "replyTo": id, "type": "pong", "data": { "status": "healthy", "details": { "games": crate::codes::OPEN.load(std::sync::atomic::Ordering::Relaxed) } } })).await;
+                            let _ = send(&mut write, &json!({ "id": guid(), "replyTo": id, "type": "pong", "data": { "status": "healthy", "details": { "rooms": crate::book::OPEN.load(std::sync::atomic::Ordering::Relaxed) } } })).await;
                         }
                         Some("shutdown") => {
                             let _ = send(&mut write, &json!({ "id": guid(), "replyTo": id, "type": "shutdown-ack" })).await;

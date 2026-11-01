@@ -1,6 +1,6 @@
 # What matchmaker is to become
 
-A proposal, not built yet beyond stage 1.
+Stages 1 and 2 are built; the rest is the plan.
 
 ## Goals
 
@@ -63,9 +63,11 @@ rooms.
 
 1. **Codes and relay** (built): a host's ticket under a code while it is
    connected; the iroh door; Husky; releases for Linux and Windows.
-2. **Apps and rooms** over iroh: app and version, seats, attributes, the
-   list, quick join. Voxcade's NETWORK page lists open games across the
-   internet beside those on the LAN.
+2. **Apps and rooms** over iroh (built, 0.2): app and version, seats,
+   attributes, the list, quick join, refusals as words. The rooms live
+   apart from the door (`server/src/book.rs`), so the next door shares
+   them. Voxcade's NETWORK page lists open games across the internet
+   beside those on the LAN.
 3. **The WebSocket door**, a browser example in JavaScript, the protocol
    written out for other languages.
 4. **Examples for Unity and Godot**, when someone asks for them.

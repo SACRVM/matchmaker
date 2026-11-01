@@ -10,7 +10,8 @@
 //! token and key, on the server itself: the secret key never leaves it,
 //! the game gets the token and the key's public half.
 
-mod codes;
+mod book;
+mod door;
 mod husky;
 
 use std::net::SocketAddr;
@@ -62,7 +63,7 @@ fn default_relay() -> SocketAddr {
 
 /// Only those who show the token are relayed.
 #[derive(Debug)]
-struct Token(String);
+pub(crate) struct Token(pub(crate) String);
 
 impl AccessControl for Token {
     async fn on_connect(&self, request: &ClientRequest) -> Access {
@@ -122,8 +123,9 @@ async fn main() -> Result<()> {
     let local: RelayUrl = format!("http://{}", server.http_addr().context("the relay's address")?).parse()?;
     println!("the relay listens on {local}");
 
-    // The codes, reached through the relay.
-    let codes = codes::serve(key, local, cfg.token.clone()).await?;
+    // The rooms, reached through the relay.
+    let book = std::sync::Arc::new(std::sync::Mutex::new(book::Book::default()));
+    let codes = door::serve(key, local, cfg.token.clone(), book).await?;
 
     let why = tokio::select! {
         _ = tokio::signal::ctrl_c() => "ctrl-c".to_string(),

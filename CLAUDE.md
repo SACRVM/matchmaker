@@ -10,8 +10,9 @@ become (stages; build a stage only once the user agreed to it).
 - `protocol/`: `matchmaker-protocol`, the words a game and a matchmaker
   share (serde only). A change to it changes the ALPN's version.
 - `server/`: `matchmaker`, the program: `main.rs` (config, the relay,
-  stopping), `codes.rs` (the codes' endpoint and its book), `husky.rs`
-  (Husky's pipe, LEASH).
+  stopping), `book.rs` (the rooms and what each ask does to them, apart
+  from any door; most tests), `door.rs` (the iroh door, its tests through
+  a real relay in one process), `husky.rs` (Husky's pipe, LEASH).
 - `husky.config.json`: where Husky finds the releases; `.github/workflows/
   release.yml` builds them, and publishes them on a version tag.
 

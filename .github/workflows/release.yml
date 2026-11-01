@@ -46,7 +46,10 @@ jobs:
         run: |
           $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages[0].version
           $zip = "matchmaker-$version-${{ matrix.name }}.zip"
-          Compress-Archive -Path target/release/${{ matrix.exe }} -DestinationPath $zip
+          # Husky lays the zip over its folder: the program goes in app/.
+          New-Item -ItemType Directory -Force -Path staging/app | Out-Null
+          Copy-Item target/release/${{ matrix.exe }} staging/app/
+          Compress-Archive -Path staging/app -DestinationPath $zip
           "ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: The version Husky reads

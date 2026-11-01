@@ -103,7 +103,9 @@ nssm set Husky-Matchmaker AppStderr    "C:\Apps\matchmaker\logs\husky.err.log"
 nssm start Husky-Matchmaker
 ```
 
-The config then lives in `app\data\`, which Husky never touches. When
+Husky lays each release's zip over its folder, so the zips hold the
+program in `app/`. The config then lives in `app\data\`, which Husky
+never touches. When
 Husky asks the matchmaker to stop for an update, it stops at once; open
 games lose their codes, and guests already in play on.
 

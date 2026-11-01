@@ -1,9 +1,11 @@
 //! The open rooms, apart from how hosts and guests reach the matchmaker
-//! (its doors: iroh's in `door.rs`): what each ask does to them. A room
-//! belongs to the connection that opened it and goes with it.
+//! (its doors: iroh's in `door.rs`, the WebSocket's in `ws.rs`): what
+//! each ask does to them. A room belongs to the connection that opened it
+//! and goes with it.
 
 use std::collections::{BTreeMap, HashMap};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::Instant;
 
 use matchmaker_protocol::{self as protocol, Answer, Ask, Found, Join, Listed, Refusal, Room, Rooms, Search, Update};
@@ -13,6 +15,44 @@ pub const MOST_ROOMS: usize = 10_000;
 
 /// How many rooms are open (for Husky's console, `husky.rs`).
 pub static OPEN: AtomicUsize = AtomicUsize::new(0);
+
+/// A number for a new connection, through whichever door it came.
+pub fn next_conn() -> u64 {
+    static NEXT: AtomicU64 = AtomicU64::new(1);
+    NEXT.fetch_add(1, Ordering::Relaxed)
+}
+
+/// What a door answers a connection's ask (its bytes, as they came):
+/// refused if it asks too fast or makes no sense, else the book's answer.
+pub fn reply(book: &Mutex<Book>, conn: u64, bytes: &[u8], allowance: &mut Allowance, door: &str) -> Answer {
+    let now = Instant::now();
+    if !allowance.take(now) {
+        return Answer::No(Refusal::TooFast);
+    }
+    let Ok(ask) = serde_json::from_slice::<Ask>(bytes) else { return Answer::No(Refusal::NotUnderstood) };
+    let opens = matches!(ask, Ask::Open(_));
+    let mut b = book.lock().expect("the book");
+    let answer = b.answer(conn, ask, now, &mut random_code);
+    if opens && matches!(answer, Answer::Code(_)) {
+        println!("a room opened through the {door} door ({} open)", b.len());
+    }
+    answer
+}
+
+/// The connection is gone, and its room with it.
+pub fn gone(book: &Mutex<Book>, conn: u64) {
+    let mut b = book.lock().expect("the book");
+    if b.gone(conn) {
+        println!("a room closed ({} open)", b.len());
+    }
+}
+
+/// A new code, at random.
+pub fn random_code() -> String {
+    let mut bytes = [0u8; protocol::LENGTH];
+    getrandom::fill(&mut bytes).expect("the system's random numbers");
+    bytes.iter().map(|x| protocol::SIGNS[(x % 32) as usize] as char).collect()
+}
 
 /// A connection's asks: a burst of `BURST`, then `RATE` a second.
 const BURST: f64 = 20.0;

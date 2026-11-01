@@ -13,6 +13,7 @@
 mod book;
 mod door;
 mod husky;
+mod ws;
 
 use std::net::SocketAddr;
 use std::num::NonZeroU32;
@@ -30,6 +31,9 @@ struct Config {
     /// Where the relay listens, behind the reverse proxy.
     #[serde(default = "default_relay")]
     relay: SocketAddr,
+    /// Where the WebSocket door listens, behind the reverse proxy too.
+    #[serde(default = "default_websocket")]
+    websocket: SocketAddr,
     /// The token every game shows the relay.
     token: String,
     /// The codes' secret key; the games know its public half.
@@ -48,13 +52,17 @@ fn make(path: &std::path::Path) -> Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }
-    let relay = default_relay();
-    std::fs::write(path, format!("# matchmaker's config: keep it on the server, never in a repository.\nrelay = \"{relay}\"\ntoken = \"{token}\"\nkey = \"{secret}\"\n"))?;
+    let (relay, websocket) = (default_relay(), default_websocket());
+    std::fs::write(path, format!("# matchmaker's config: keep it on the server, never in a repository.\nrelay = \"{relay}\"\nwebsocket = \"{websocket}\"\ntoken = \"{token}\"\nkey = \"{secret}\"\n"))?;
     println!("wrote {}", path.display());
     println!("for the games (the relay's token, the codes' public key):");
     println!("  token: {token}");
     println!("  codes: {}", key.public());
     Ok(())
+}
+
+fn default_websocket() -> SocketAddr {
+    ([127, 0, 0, 1], 7341).into()
 }
 
 fn default_relay() -> SocketAddr {
@@ -123,8 +131,9 @@ async fn main() -> Result<()> {
     let local: RelayUrl = format!("http://{}", server.http_addr().context("the relay's address")?).parse()?;
     println!("the relay listens on {local}");
 
-    // The rooms, reached through the relay.
+    // The rooms, reached through the relay and by WebSocket.
     let book = std::sync::Arc::new(std::sync::Mutex::new(book::Book::default()));
+    ws::serve(cfg.websocket, cfg.token.clone(), book.clone()).await?;
     let codes = door::serve(key, local, cfg.token.clone(), book).await?;
 
     let why = tokio::select! {

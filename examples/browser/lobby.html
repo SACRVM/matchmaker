@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>matchmaker lobby</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { max-width: 40rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  fieldset { margin: 1rem 0; border-radius: .5rem; }
+  input { font: inherit; width: 100%; box-sizing: border-box; margin: .2rem 0 .6rem; }
+  button { font: inherit; margin-right: .5rem; }
+  pre { background: #8881; padding: .8rem; border-radius: .5rem; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>matchmaker lobby</h1>
+<p>A game's side of the WebSocket door: open a room, list the open rooms,
+join one by its code or take any free seat. A real game puts what its guests
+need to reach it into the ticket (a WebRTC offer, an address) and keeps the
+socket open while its room should stay.</p>
+
+<fieldset>
+  <legend>The matchmaker</legend>
+  <label>Address <input id="url" value="ws://127.0.0.1:7341/matchmaker/1"></label>
+  <label>Token <input id="token" placeholder="the token the matchmaker printed"></label>
+  <label>Game <input id="app" value="example/lobby"></label>
+  <label>Version <input id="version" value="1"></label>
+  <button id="connect">Connect</button>
+</fieldset>
+
+<fieldset>
+  <legend>Host</legend>
+  <label>Title <input id="title" value="My game"></label>
+  <label>Ticket <input id="ticket" value="whatever my guests need to reach me"></label>
+  <button id="open">Open a room</button>
+</fieldset>
+
+<fieldset>
+  <legend>Guest</legend>
+  <label>Code <input id="code" placeholder="DX67A3"></label>
+  <button id="list">List rooms</button>
+  <button id="join">Join by code</button>
+  <button id="quick">Any free seat</button>
+</fieldset>
+
+<pre id="log">Not connected.</pre>
+
+<script>
+// One socket; each ask is one JSON text message, each answer one, in turn.
+let socket = null;
+const waiting = [];
+const $ = (id) => document.getElementById(id);
+const log = (line) => { $("log").textContent += "\n" + line; };
+
+function connect() {
+  const url = new URL($("url").value);
+  url.searchParams.set("token", $("token").value);
+  socket = new WebSocket(url);
+  $("log").textContent = "Connecting to " + $("url").value + " ...";
+  socket.onopen = () => log("Connected.");
+  socket.onclose = (e) => log("Closed (" + e.code + " " + e.reason + "): a room opened here is gone.");
+  socket.onmessage = (e) => {
+    const answer = JSON.parse(e.data);
+    const asked = waiting.shift();
+    log(asked + " -> " + JSON.stringify(answer));
+  };
+}
+
+function ask(question) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return log("Connect first.");
+  waiting.push(JSON.stringify(question));
+  socket.send(JSON.stringify(question));
+}
+
+const game = () => ({ app: $("app").value, version: $("version").value });
+
+$("connect").onclick = connect;
+$("open").onclick = () => ask({ open: { ...game(), title: $("title").value, seats: 4, taken: 1, ticket: $("ticket").value } });
+$("list").onclick = () => ask({ list: game() });
+$("join").onclick = () => ask({ join: { code: $("code").value, ...game() } });
+$("quick").onclick = () => ask({ quick: game() });
+</script>
+</body>
+</html>

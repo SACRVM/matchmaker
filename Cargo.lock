@@ -1731,23 +1731,26 @@ dependencies = [
 
 [[package]]
 name = "matchmaker"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
+ "futures-util",
  "getrandom 0.3.4",
+ "http",
  "iroh",
  "iroh-relay",
  "matchmaker-protocol",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-websockets",
  "toml",
  "winresource",
 ]
 
 [[package]]
 name = "matchmaker-protocol"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",

@@ -8,9 +8,9 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result};
 use iroh::endpoint::{Connection, presets};
 use iroh::{Endpoint, RelayMap, RelayMode, RelayUrl, SecretKey};
-use matchmaker_protocol::{self as protocol, Answer, Ask, Refusal};
+use matchmaker_protocol as protocol;
 
-use crate::book::{Allowance, Book};
+use crate::book::{self, Allowance, Book};
 
 /// Serves the book through the relay at `relay` (this program's own,
 /// `token` its key) as the endpoint of `key`; the endpoint, to close.
@@ -24,23 +24,16 @@ pub async fn serve(key: SecretKey, relay: RelayUrl, token: String, book: Arc<Mut
         .await
         .context("the matchmaker's endpoint")?;
     tokio::time::timeout(Duration::from_secs(15), endpoint.online()).await.context("the matchmaker's endpoint reached no relay within 15 s")?;
-    println!("the matchmaker is reached as {}", endpoint.id());
+    println!("the iroh door is reached as {}", endpoint.id());
     let serving = endpoint.clone();
     tokio::spawn(async move {
-        let mut next = 0u64;
         while let Some(incoming) = serving.accept().await {
-            next += 1;
-            let (book, conn_id) = (book.clone(), next);
+            let book = book.clone();
             tokio::spawn(async move {
                 if let Ok(conn) = incoming.await {
-                    answer(conn, conn_id, &book).await;
-                    let (had, open) = {
-                        let mut b = book.lock().expect("the book");
-                        (b.gone(conn_id), b.len())
-                    };
-                    if had {
-                        println!("a room closed ({open} open)");
-                    }
+                    let id = book::next_conn();
+                    answer(conn, id, &book).await;
+                    book::gone(&book, id);
                 }
             });
         }
@@ -49,27 +42,11 @@ pub async fn serve(key: SecretKey, relay: RelayUrl, token: String, book: Arc<Mut
 }
 
 /// Answers a connection's asks, one a stream, until it closes.
-async fn answer(conn: Connection, conn_id: u64, book: &Mutex<Book>) {
+async fn answer(conn: Connection, id: u64, book: &Mutex<Book>) {
     let mut allowance = Allowance::new(Instant::now());
     while let Ok((mut send, mut recv)) = conn.accept_bi().await {
         let Ok(bytes) = recv.read_to_end(protocol::MAX_ASK).await else { break };
-        let now = Instant::now();
-        let answer = if !allowance.take(now) {
-            Answer::No(Refusal::TooFast)
-        } else {
-            match serde_json::from_slice::<Ask>(&bytes) {
-                Ok(ask) => {
-                    let opens = matches!(ask, Ask::Open(_));
-                    let mut b = book.lock().expect("the book");
-                    let answer = b.answer(conn_id, ask, now, &mut random_code);
-                    if opens && matches!(answer, Answer::Code(_)) {
-                        println!("a room opened ({} open)", b.len());
-                    }
-                    answer
-                }
-                Err(_) => Answer::No(Refusal::NotUnderstood),
-            }
-        };
+        let answer = book::reply(book, id, &bytes, &mut allowance, "iroh");
         let Ok(bytes) = serde_json::to_vec(&answer) else { break };
         if send.write_all(&bytes).await.is_err() || send.finish().is_err() {
             break;
@@ -77,18 +54,11 @@ async fn answer(conn: Connection, conn_id: u64, book: &Mutex<Book>) {
     }
 }
 
-/// A new code, at random.
-pub fn random_code() -> String {
-    let mut bytes = [0u8; protocol::LENGTH];
-    getrandom::fill(&mut bytes).expect("the system's random numbers");
-    bytes.iter().map(|x| protocol::SIGNS[(x % 32) as usize] as char).collect()
-}
-
 #[cfg(test)]
 mod tests {
     use iroh::{EndpointAddr, TransportAddr};
     use iroh_relay::server as relay;
-    use matchmaker_protocol::{Join, Room, Search, Update};
+    use matchmaker_protocol::{Answer, Ask, Join, Refusal, Room, Search, Update};
 
     use super::*;
 

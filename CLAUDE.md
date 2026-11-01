@@ -12,7 +12,10 @@ become (stages; build a stage only once the user agreed to it).
 - `server/`: `matchmaker`, the program: `main.rs` (config, the relay,
   stopping), `book.rs` (the rooms and what each ask does to them, apart
   from any door; most tests), `door.rs` (the iroh door, its tests through
-  a real relay in one process), `husky.rs` (Husky's pipe, LEASH).
+  a real relay in one process), `ws.rs` (the WebSocket door, its tests
+  with a WebSocket client), `husky.rs` (Husky's pipe, LEASH).
+- `examples/browser/lobby.html`: a page that speaks the WebSocket door.
+  Node's WebSocket is a browser's: `node` tries a door as a page would.
 - `husky.config.json`: where Husky finds the releases; `.github/workflows/
   release.yml` builds them, and publishes them on a version tag.
 

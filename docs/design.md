@@ -1,6 +1,6 @@
 # What matchmaker is to become
 
-Stages 1 and 2 are built; the rest is the plan.
+Stages 1 to 3 are built; the rest is the plan.
 
 ## Goals
 
@@ -40,9 +40,11 @@ anti-cheat. A game that needs them keeps them elsewhere.
 
 - **iroh** (stage 1): reached through the built-in relay, no port of its
   own. For games that use iroh already (Rust).
-- **WebSocket with JSON** (`wss://.../lobby`, subprotocol
-  `matchmaker.v1`): through the same reverse proxy. For every engine
-  (Unity and C#, Godot, a browser). The room lives as long as the socket.
+- **WebSocket with JSON** (`wss://.../matchmaker/1?token=TOKEN`, the
+  protocol's version in the path: a subprotocol would have to be echoed
+  only when asked, which the handshake does before the path is read):
+  through the same reverse proxy. For every engine (Unity and C#, Godot,
+  a browser). The room lives as long as the socket.
 
 Both doors lead to the same rooms, so a game reachable both ways meets
 its players on either.
@@ -68,6 +70,8 @@ rooms.
    apart from the door (`server/src/book.rs`), so the next door shares
    them. Voxcade's NETWORK page lists open games across the internet
    beside those on the LAN.
-3. **The WebSocket door**, a browser example in JavaScript, the protocol
-   written out for other languages.
+3. **The WebSocket door** (built, 0.3): the same rooms, a page in a
+   browser speaking it (`examples/browser/lobby.html`), the protocol in
+   the README for other languages. Pings every 20 s; a socket silent for
+   a minute is closed.
 4. **Examples for Unity and Godot**, when someone asks for them.

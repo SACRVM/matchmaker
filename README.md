@@ -11,26 +11,29 @@ directly talk through the relay. There are no accounts and no database:
 a room lives exactly as long as its host stays connected.
 
 It was made for [Voxcade](https://voxca.de)'s network games and is meant
-for any peer-to-peer game. Status: 0.2, rooms, the list, quick join and
-the relay over iroh. A door for every engine (WebSocket) is planned
-([docs/design.md](docs/design.md)).
+for any peer-to-peer game, in any engine: games reach it over iroh, or
+over a WebSocket from a browser, Unity, Godot or anything else. Status:
+0.3 ([docs/design.md](docs/design.md) has what comes next).
 
 ## How it fits together
 
 ```
            443 (TLS)                      plain HTTP
 Internet ───────────> reverse proxy ──────────────────> matchmaker
-                      (Caddy, ...)        127.0.0.1:7340   ├── relay (iroh)
-                                                           └── codes (an iroh endpoint,
-                                                               reached through the relay)
+                      (Caddy, ...)   127.0.0.1:7340   ├── relay (iroh)
+                                                      ├── iroh door (an endpoint reached
+                                                      │   through the relay)
+                                     127.0.0.1:7341   └── WebSocket door (/matchmaker/1)
 ```
 
 - **The relay** is [iroh](https://iroh.computer)'s. Every machine meets the
   others there first, and stays on it where no direct path can be found.
   Only machines that show the token are relayed.
-- **The rooms** are reached through an iroh endpoint with a key of its
-  own. Games know the key's public half and reach it through the relay,
-  so the program needs no port beyond the relay's.
+- **The rooms** are reached through two doors that lead to the same
+  rooms. The iroh door is an endpoint with a key of its own; games know
+  the key's public half and reach it through the relay. The WebSocket
+  door is for every other engine: `wss://.../matchmaker/1?token=TOKEN`.
+  A game on one door finds a room opened through the other.
 - **The ticket** a host leaves in its room is opaque to the matchmaker
   (up to 1,024 bytes): an iroh address, an IP and port, whatever the game
   joins by. Only a guest who joins the room is given it.
@@ -59,9 +62,10 @@ game that uses it.
 The config:
 
 ```toml
-relay = "127.0.0.1:7340"   # where the relay listens, behind the reverse proxy
-token = "..."              # the token games show the relay
-key = "..."                # the codes' secret key
+relay = "127.0.0.1:7340"       # where the relay listens, behind the reverse proxy
+websocket = "127.0.0.1:7341"   # where the WebSocket door listens, behind it too
+token = "..."                  # the token games show the relay and the WebSocket door
+key = "..."                    # the iroh door's secret key
 ```
 
 ### Behind a reverse proxy
@@ -71,11 +75,18 @@ included. With Caddy:
 
 ```
 relay.example.com {
-    reverse_proxy 127.0.0.1:7340
+    handle /matchmaker/* {
+        reverse_proxy 127.0.0.1:7341
+    }
+    handle {
+        reverse_proxy 127.0.0.1:7340
+    }
 }
 ```
 
-Games then use `https://relay.example.com` as their relay.
+Games then use `https://relay.example.com` as their relay, and
+`wss://relay.example.com/matchmaker/1?token=TOKEN` as the WebSocket
+door.
 
 ### Under Husky
 
@@ -99,8 +110,12 @@ games lose their codes, and guests already in play on.
 ## The protocol
 
 `matchmaker-protocol` (in [protocol/](protocol/)) holds the words both
-sides share. Over iroh, on the ALPN `matchmaker/1`, one JSON value is
-asked on a stream and one answered:
+sides share, in Rust. Each ask is one JSON value and so is its answer:
+over iroh, on the ALPN `matchmaker/1`, one a stream; over the WebSocket,
+one a text message, answered in turn.
+[examples/browser/lobby.html](examples/browser/lobby.html) is a page that
+speaks it from a browser.
+
 
 | Who | Asks | Answer |
 |---|---|---|
@@ -125,6 +140,8 @@ words for the game to say in its own: `unknown-code`, `other-app`,
 - Codes are six of 32 signs (no 0, O, 1 or I); a guest may type them in
   small letters, with a space or a dash; app and version in a join are
   optional (given, another game's code is refused as such).
+- A WebSocket silent for a minute (no answer to the pings every 20
+  seconds) is closed, and its room with it.
 - Limits: 10,000 rooms; a connection asks 20 at once, then 2 a second;
   an app 64 bytes, a version 128, a title 64, a ticket 1,024, 64 seats,
   16 attributes of 32-byte keys and 64-byte values.

@@ -78,6 +78,14 @@
     },
 
     {
+      "group": "Git",
+      "name": "repo",
+      "description": "The repository on GitHub.",
+      "type": "url",
+      "url": "https://github.com/SACRVM/matchmaker"
+    },
+
+    {
       "group": "Open",
       "name": "lobby",
       "description": "Opens the browser lobby page, which speaks the WebSocket door (a local one, or the server's).",
@@ -101,15 +109,6 @@
       "description": "The Release workflow's runs on GitHub.",
       "type": "url",
       "url": "https://github.com/SACRVM/matchmaker/actions",
-      "bar": false
-    },
-
-    {
-      "group": "Open",
-      "name": "repo",
-      "description": "The repository on GitHub.",
-      "type": "url",
-      "url": "https://github.com/SACRVM/matchmaker",
       "bar": false
     },
 

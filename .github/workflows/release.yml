@@ -49,7 +49,15 @@ jobs:
           # Husky lays the zip over its folder: the program goes in app/.
           New-Item -ItemType Directory -Force -Path staging/app | Out-Null
           Copy-Item target/release/${{ matrix.exe }} staging/app/
-          Compress-Archive -Path staging/app -DestinationPath $zip
+          # Compress-Archive drops the exec bit, also on Linux: zip keeps it.
+          if ($IsWindows) {
+            Compress-Archive -Path staging/app -DestinationPath $zip
+          } else {
+            chmod +x staging/app/${{ matrix.exe }}
+            Push-Location staging
+            zip -qr ../$zip app
+            Pop-Location
+          }
           "ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: The version Husky reads

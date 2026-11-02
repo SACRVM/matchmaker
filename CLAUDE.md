@@ -8,12 +8,14 @@ become (stages; build a stage only once the user agreed to it).
 ## Layout
 
 - `protocol/`: `matchmaker-protocol`, the words a game and a matchmaker
-  share (serde only). A change to it changes the ALPN's version.
+  share (serde only). A change to the wire changes its version, in the
+  ALPN (`protocol::ALPN`) and the WebSocket path (`ws::PATH`) alike.
 - `server/`: `matchmaker`, the program: `main.rs` (config, the relay,
   stopping), `book.rs` (the rooms and what each ask does to them, apart
   from any door; most tests), `door.rs` (the iroh door, its tests through
   a real relay in one process), `ws.rs` (the WebSocket door, its tests
-  with a WebSocket client), `husky.rs` (Husky's pipe, LEASH).
+  with a WebSocket client), `husky.rs` (Husky's pipe, LEASH); `build.rs`
+  gives the Windows program its version, which Husky reads.
 - `examples/browser/lobby.html`: a page that speaks the WebSocket door.
   Node's WebSocket is a browser's: `node` tries a door as a page would.
 - `husky.config.json`: where Husky finds the releases; `.github/workflows/
@@ -22,12 +24,14 @@ become (stages; build a stage only once the user agreed to it).
 ## Commands
 
 - Build and test: `cargo build --release`, `cargo test --release`,
-  `cargo clippy --release`.
+  `cargo clippy --release --all-targets`.
 - Run locally: `target/release/matchmaker --new --config FILE` once, then
-  `--config FILE` (127.0.0.1:7340). A Voxcade game tries it with
+  `--config FILE` (the relay on 127.0.0.1:7340, the WebSocket door on
+  ws://127.0.0.1:7341/matchmaker/1). A Voxcade game tries it with
   `VOXCADE_RELAY=http://127.0.0.1:7340 VOXCADE_RELAY_TOKEN=... VOXCADE_CODES=...`.
-- Releases: raise the workspace version, push a tag `vX.Y.Z` (only when
-  the user says so).
+- Releases: raise the workspace version, build once so `Cargo.lock`
+  follows (CI builds `--locked`), commit both, push a tag `vX.Y.Z` (only
+  when the user says so).
 
 ## Rules
 

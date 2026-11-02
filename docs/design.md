@@ -32,8 +32,8 @@ anti-cheat. A game that needs them keeps them elsewhere.
   - by code (stage 1): the ticket of the room with this code;
   - the list: the rooms of an app and version, filtered by attributes,
     newest first, a page at a time;
-  - quick join: the room of an app and version with a free seat that
-    best matches the given attributes.
+  - quick join: the room of an app and version with a free seat and all
+    the given attributes: the fullest, the oldest of equals.
 - **Ticket**: whatever the guest needs to reach the host, opaque.
 
 ## Doors
@@ -56,9 +56,11 @@ transports bring their own (a TURN server for WebRTC).
 
 ## Limits against misuse
 
-One room for each connection, a cap on rooms and connections, lookups and
-lists for each connection, connections from one address per minute, the
-token for each deployment. Optional: a list of the apps that may open
+Built: the token for each deployment, one room for each connection, a
+cap on rooms (10,000), asks for each connection (20 at once, then 2 a
+second), new connections to the relay (20 a second). Planned: a cap on
+connections, connections from one address per minute (behind the proxy
+from its forwarded address). Optional: a list of the apps that may open
 rooms.
 
 ## Stages

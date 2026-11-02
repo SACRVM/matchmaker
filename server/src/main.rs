@@ -1,9 +1,11 @@
 //! matchmaker: game codes and a relay in one program, for the machines of
 //! a peer-to-peer game in different homes. The relay (iroh's) listens on a
 //! local port with plain HTTP; a reverse proxy in front of it (Caddy, say)
-//! takes the public name on 443 and holds its certificate. The game codes
-//! are an iroh endpoint reached through that relay, so nothing else needs
-//! a port. Husky may run it (`husky.rs`); `README.md` says how it is set up.
+//! takes the public name on 443 and holds its certificate. The rooms have
+//! two doors: an iroh endpoint reached through that relay (`door.rs`, no
+//! port of its own) and a WebSocket on a second local port behind the same
+//! proxy (`ws.rs`). Husky may run it (`husky.rs`); `README.md` says how it
+//! is set up.
 //!
 //! Its config is `data/matchmaker.toml` beside the program (or
 //! `--config FILE`), made on the first start or by `--new`, with a new
@@ -34,7 +36,7 @@ struct Config {
     /// Where the WebSocket door listens, behind the reverse proxy too.
     #[serde(default = "default_websocket")]
     websocket: SocketAddr,
-    /// The token every game shows the relay.
+    /// The token every game shows the relay and the WebSocket door.
     token: String,
     /// The codes' secret key; the games know its public half.
     key: String,

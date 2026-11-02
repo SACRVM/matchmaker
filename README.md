@@ -46,7 +46,7 @@ matchmaker --config FILE
 matchmaker --new [--config FILE]
 ```
 
-The first start (or `--new`) writes the config with a new token and key
+The first start without `--config` (or `--new`) writes the config with a new token and key
 and prints what the games need:
 
 ```
@@ -112,7 +112,8 @@ resources, which the Windows build carries. A Linux program has none, so
 Husky on Linux installs the release anew at every check: there, run the
 matchmaker under systemd instead. When
 Husky asks the matchmaker to stop for an update, it stops at once; open
-games lose their codes, and guests already in play on.
+rooms lose their codes, and games already under way play on (through
+the relay once it is back).
 
 ## The protocol
 
@@ -127,7 +128,7 @@ speaks it from a browser.
 | Who | Asks | Answer |
 |---|---|---|
 | a host | `{"open": {"app": "voxcade/pulsar", "version": "7f3a", "title": "Anna", "seats": 2, "taken": 1, "attributes": {"mode": "coop"}, "ticket": "..."}}` | `{"code": "DX67A3"}` |
-| the host | `{"update": {"taken": 2}}` (any of title, seats, taken, attributes, listed) | `{"ok": {}}` |
+| the host | `{"update": {"taken": 2}}` (any of title, seats, taken, attributes, listed; attributes given replace the old) | `{"ok": {}}` |
 | a guest | `{"join": {"code": "dx6-7a3", "app": "voxcade/pulsar", "version": "7f3a"}}` | `{"found": {"code": "DX67A3", "title": "Anna", "ticket": "..."}}` |
 | a guest | `{"list": {"app": "voxcade/pulsar", "version": "7f3a", "attributes": {"mode": "coop"}, "page": 0}}` | `{"rooms": {"rooms": [{"code", "title", "seats", "taken", "attributes", "age"}], "more": false}}` |
 | a guest | `{"quick": {"app": "voxcade/pulsar", "version": "7f3a"}}` | `{"found": {...}}` |
@@ -150,7 +151,7 @@ words for the game to say in its own: `unknown-code`, `other-app`,
 - A WebSocket silent for a minute (no answer to the pings every 20
   seconds) is closed, and its room with it.
 - Limits: 10,000 rooms; a connection asks 20 at once, then 2 a second;
-  an app 64 bytes, a version 128, a title 64, a ticket 1,024, 64 seats,
+  an ask 4,096 bytes, an app 64, a version 128, a title 64, a ticket 1,024, 64 seats,
   16 attributes of 32-byte keys and 64-byte values.
 
 ## Building

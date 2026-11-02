@@ -25,19 +25,102 @@
   //   confirm      — asks before it runs
   // Shell commands run only after you trust them in the panel, and again
   // after any of their command lines changes.
-  // "commands": [
-  //   { "group": "Run", "name": "dev", "description": "Starts the dev server.",
-  //     "type": "shell", "command": "npm", "args": ["run", "dev"],
-  //     "window": "reuse:dev", "longRunning": true },
-  //   { "group": "Test", "name": "all", "description": "Runs the tests; the result lands in the chat.",
-  //     "type": "shell", "command": "dotnet", "args": ["test"], "window": "inline" },
-  //   { "group": "Git", "name": "status", "type": "shell",
-  //     "command": "git", "args": ["status", "-sb"], "window": "inline" },
-  //   { "group": "Claude", "name": "review", "type": "claude-prompt",
-  //     "prompt": "Look for code smells in src/ and propose fixes." },
-  //   { "group": "Open", "name": "issues", "type": "url",
-  //     "url": "https://github.com/<you>/matchmaker/issues" }
-  // ],
+  "commands": [
+    {
+      "group": "Run",
+      "name": "local",
+      "description": "Builds and starts the matchmaker on 127.0.0.1:7340 (WebSocket door 7341); the first start makes target/release/data/matchmaker.toml and logs its token and key.",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["run", "--release", "-p", "matchmaker"],
+      "window": "reuse:local",
+      "longRunning": true
+    },
+
+    {
+      "group": "Test",
+      "name": "all",
+      "description": "Runs the server and protocol tests; the result comes back into the chat.",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["test", "--release"],
+      "window": "inline"
+    },
+
+    {
+      "group": "Test",
+      "name": "clippy",
+      "description": "Lints the workspace with clippy; warnings come back into the chat.",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["clippy", "--release"],
+      "window": "inline"
+    },
+
+    {
+      "group": "Build",
+      "name": "release",
+      "description": "Release build; warnings and errors come back into the chat.",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--release"],
+      "window": "inline"
+    },
+
+    {
+      "group": "Git",
+      "name": "status",
+      "description": "Branch and changed files.",
+      "type": "shell",
+      "command": "git",
+      "args": ["status", "--short", "--branch"],
+      "window": "inline"
+    },
+
+    {
+      "group": "Open",
+      "name": "lobby",
+      "description": "Opens the browser lobby page, which speaks the WebSocket door (a local one, or the server's).",
+      "type": "shell",
+      "command": "xdg-open",
+      "args": ["examples/browser/lobby.html"],
+      "window": "inline"
+    },
+
+    {
+      "group": "Open",
+      "name": "releases",
+      "description": "The releases on GitHub, where Husky installs from.",
+      "type": "url",
+      "url": "https://github.com/SACRVM/matchmaker/releases"
+    },
+
+    {
+      "group": "Open",
+      "name": "actions",
+      "description": "The Release workflow's runs on GitHub.",
+      "type": "url",
+      "url": "https://github.com/SACRVM/matchmaker/actions",
+      "bar": false
+    },
+
+    {
+      "group": "Open",
+      "name": "repo",
+      "description": "The repository on GitHub.",
+      "type": "url",
+      "url": "https://github.com/SACRVM/matchmaker",
+      "bar": false
+    },
+
+    {
+      "group": "Claude",
+      "name": "status",
+      "description": "Asks Claude for matchmaker's status: git, the latest release and run, pending inbox messages.",
+      "type": "claude-prompt",
+      "prompt": "Give me matchmaker's status: git state, the latest release and its Release run, and any pending Firepit inbox messages (summarise them, act on nothing yet)."
+    }
+  ],
 
   // Scheduled headless Claude runs. Each entry fires on its cron schedule
   // and starts `claude -p "<prompt>" --output-format json` in this project's

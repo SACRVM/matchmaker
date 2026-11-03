@@ -69,7 +69,8 @@ async fn answer(ws: &mut tokio_websockets::WebSocketStream<TcpStream>, id: u64, 
                 let message = message?;
                 heard = Instant::now();
                 if message.is_close() {
-                    return Ok(());
+                    // The answer to its close waits in the stream: send it.
+                    return Ok(ws.close().await?);
                 }
                 let Some(text) = message.as_text() else { continue };
                 let answer = book::reply(book, id, text.as_bytes(), &mut allowance, "WebSocket");
@@ -146,6 +147,17 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
         assert_eq!(ask(&mut guest, &join).await, Answer::No(Refusal::UnknownCode), "the room went with its host's socket");
+    }
+
+    /// A socket that closes gets the door's close in answer: a clean end
+    /// for the game (1000), not a dropped connection (1006).
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_door_answers_a_close() {
+        let (at, _) = door().await;
+        let mut ws = connect(at, "/matchmaker/1?token=t0ken").await;
+        ws.send(Message::close(Some(CloseCode::NORMAL_CLOSURE), "bye")).await.unwrap();
+        let answer = ws.next().await;
+        assert!(matches!(&answer, Some(Ok(m)) if m.is_close()), "{answer:?}");
     }
 
     /// Without the token, or at another path, a socket is closed at once.

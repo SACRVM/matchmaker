@@ -92,8 +92,36 @@ door.
 
 [Husky](https://github.com/SACRVM/husky) can run it on a server, restart
 it and install new releases. `husky.config.json` in this repository tells
-Husky where the releases are. On Windows wrap Husky in a service with
-NSSM, as Husky's README shows:
+Husky where the releases are.
+
+**Windows.** Save this as `run.ps1` in an empty folder, for example
+`C:\Apps\matchmaker`, and run it with
+`powershell -ExecutionPolicy Bypass -File run.ps1`. The first run
+downloads Husky; Husky then installs the newest matchmaker and every
+release after it. Running the script again just starts Husky again.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$dir = $PSScriptRoot
+$exe = Join-Path $dir 'Husky.exe'
+
+if (-not (Test-Path $exe)) {
+    $zip = Join-Path $env:TEMP 'husky.zip'
+    Invoke-WebRequest 'https://github.com/SACRVM/husky/releases/latest/download/husky-win-x64.zip' -OutFile $zip -UseBasicParsing
+    Expand-Archive $zip $dir -Force
+    Remove-Item $zip
+}
+
+# Detached so this window can close without stopping Husky, which opens
+# its own window for its log. Ctrl+C there stops it and the matchmaker.
+$proc = Start-Process -FilePath $exe -PassThru `
+    -ArgumentList @('--repo','SACRVM/matchmaker','--asset','matchmaker-{version}-windows-x86_64.zip','--dir',$dir)
+Write-Host "Husky started (PID $($proc.Id)). You can close this window." -ForegroundColor Green
+```
+
+Husky started this way stops when you sign out. To keep it running
+across sign-outs and restarts, stop it and make it a service with NSSM,
+in the same folder:
 
 ```powershell
 nssm install Husky-Matchmaker "C:\Apps\matchmaker\Husky.exe" "--repo SACRVM/matchmaker"
@@ -103,16 +131,16 @@ nssm set Husky-Matchmaker AppStderr    "C:\Apps\matchmaker\logs\husky.err.log"
 nssm start Husky-Matchmaker
 ```
 
-Husky lays each release's zip over its folder, so the zips hold the
-program in `app/`. The config then lives in `app\data\`, which Husky
-never touches.
+**Linux** works the same way with Husky 0.5.3 or later: its
+`husky-linux-x64.tar.gz`, `--asset 'matchmaker-{version}-linux-x86_64.zip'`,
+and a local `husky.config.json` beside Husky, since the repository's names
+the Windows program: `{ "executable": "app/matchmaker" }`.
 
-Husky tells a release is newer by the version in the program's file
-resources, which the Windows build carries. A Linux program has none, so
-Husky on Linux installs the release anew at every check: there, run the
-matchmaker under systemd instead. When
-Husky asks the matchmaker to stop for an update, it stops at once; open
-games lose their codes, and guests already in play on.
+Husky lays each release's zip over its folder, so the zips hold the
+program in `app/`. The config then lives in `app/data/`, which Husky
+never touches. When Husky asks the matchmaker to stop for an update, it
+stops at once; open games lose their codes, and guests already in play
+on.
 
 ## The protocol
 
